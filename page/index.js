@@ -4,6 +4,9 @@ import { createWidget, widget, prop, align, event } from "@zos/ui";
 import { px } from "@zos/utils";
 import EasyStorage from "@silver-zepp/easy-storage";
 import { push } from "@zos/router";
+import { setWakeUpRelaunch } from "@zos/display";
+
+setWakeUpRelaunch({ relaunch: true });
 
 const storage = new EasyStorage("tennis_score.json");
 storage.SetAutosaveEnable(true);
@@ -36,10 +39,16 @@ function restore() {
     games2 = storage.getKey("games2", 0);
     sets1 = storage.getKey("sets1", 0);
     sets2 = storage.getKey("sets2", 0);
-    inTiebreak = storage.getKey("inTiebreak", false) === true || storage.getKey("inTiebreak", false) === "true";
+    inTiebreak =
+        storage.getKey("inTiebreak", false) === true ||
+        storage.getKey("inTiebreak", false) === "true";
 }
 
 Page({
+    onInit() {
+        // Relaunch app when screen is turned on again
+        setWakeUpRelaunch({ relaunch: true });
+    },
     build() {
         const { width: SCREEN_W, height: SCREEN_H } = getDeviceInfo();
         const centerX = SCREEN_W / 2;
@@ -177,15 +186,14 @@ Page({
         // });
 
         const updateUI = () => {
-            let p1Text=""
-            let p2Text=""
+            let p1Text = "";
+            let p2Text = "";
 
             if (inTiebreak) {
-                p1Text =  String(p1)
-                p2Text = String(p2)
-            }
-            else{
-                p1Text =  scoreDisplay[p1];
+                p1Text = String(p1);
+                p2Text = String(p2);
+            } else {
+                p1Text = scoreDisplay[p1];
                 p2Text = scoreDisplay[p2];
             }
 
@@ -219,9 +227,9 @@ Page({
                 if ((p1 >= 7 || p2 >= 7) && Math.abs(p1 - p2) >= 2) {
                     if (p1 > p2) sets1++;
                     else sets2++;
-                    resetGame()
-                    games1=0
-                    games2=0
+                    resetGame();
+                    games1 = 0;
+                    games2 = 0;
                     inTiebreak = false;
                 }
             } else {
