@@ -22,14 +22,23 @@ let sets1 = 0,
 const scoreDisplay = ["0", "15", "30", "40", "Adv", "Game"];
 let p1ScoreText, p2ScoreText;
 
+let tapLocked = false;
+let persistTimeout = null;
+let prevP1Text = "", prevP2Text = "";
+let prevSummary1 = "", prevSummary2 = "";
+
+
 function persist() {
-    storage.setKey("p1", p1);
-    storage.setKey("p2", p2);
-    storage.setKey("games1", games1);
-    storage.setKey("games2", games2);
-    storage.setKey("sets1", sets1);
-    storage.setKey("sets2", sets2);
-    storage.setKey("inTiebreak", inTiebreak);
+    if (persistTimeout) clearTimeout(persistTimeout);
+    persistTimeout = setTimeout(() => {
+        storage.setKey("p1", p1);
+        storage.setKey("p2", p2);
+        storage.setKey("games1", games1);
+        storage.setKey("games2", games2);
+        storage.setKey("sets1", sets1);
+        storage.setKey("sets2", sets2);
+        storage.setKey("inTiebreak", inTiebreak);
+    }, 300); // Delay to batch writes
 }
 
 function restore() {
@@ -186,26 +195,31 @@ Page({
         // });
 
         const updateUI = () => {
-            let p1Text = "";
-            let p2Text = "";
+            let p1Text = inTiebreak ? String(p1) : scoreDisplay[p1];
+            let p2Text = inTiebreak ? String(p2) : scoreDisplay[p2];
 
-            if (inTiebreak) {
-                p1Text = String(p1);
-                p2Text = String(p2);
-            } else {
-                p1Text = scoreDisplay[p1];
-                p2Text = scoreDisplay[p2];
+            if (p1Text !== prevP1Text) {
+                p1ScoreText.setProperty(prop.MORE, { text: p1Text });
+                prevP1Text = p1Text;
             }
 
-            p1ScoreText.setProperty(prop.MORE, { text: p1Text });
-            p2ScoreText.setProperty(prop.MORE, { text: p2Text });
+            if (p2Text !== prevP2Text) {
+                p2ScoreText.setProperty(prop.MORE, { text: p2Text });
+                prevP2Text = p2Text;
+            }
 
-            p1SummaryText.setProperty(prop.MORE, {
-                text: `${sets1} | ${games1}`,
-            });
-            p2SummaryText.setProperty(prop.MORE, {
-                text: `${sets2} | ${games2}`,
-            });
+            let s1 = `${sets1} | ${games1}`;
+            let s2 = `${sets2} | ${games2}`;
+
+            if (s1 !== prevSummary1) {
+                p1SummaryText.setProperty(prop.MORE, { text: s1 });
+                prevSummary1 = s1;
+            }
+
+            if (s2 !== prevSummary2) {
+                p2SummaryText.setProperty(prop.MORE, { text: s2 });
+                prevSummary2 = s2;
+            }
 
             persist();
         };
@@ -220,6 +234,13 @@ Page({
         };
 
         const addPoint = (player) => {
+            //ANTI CLICK SPAM
+            if (tapLocked) return;
+            tapLocked = true;
+            setTimeout(() => {
+                tapLocked = false;
+            }, 150);
+
             if (inTiebreak) {
                 if (player === 1) p1++;
                 else p2++;
